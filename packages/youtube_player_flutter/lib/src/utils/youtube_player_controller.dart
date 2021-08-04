@@ -32,6 +32,7 @@ class YoutubePlayerValue {
     this.webViewController,
     this.isDragging = false,
     this.metaData = const YoutubeMetaData(),
+    this.toggleFullScreen=false
   });
 
   /// Returns true when the player is ready to play videos.
@@ -84,6 +85,8 @@ class YoutubePlayerValue {
   /// Returns meta data of the currently loaded/cued video.
   final YoutubeMetaData metaData;
 
+  final bool toggleFullScreen;
+
   /// Creates new [YoutubePlayerValue] with assigned parameters and overrides
   /// the old one.
   YoutubePlayerValue copyWith({
@@ -103,6 +106,7 @@ class YoutubePlayerValue {
     InAppWebViewController? webViewController,
     bool? isDragging,
     YoutubeMetaData? metaData,
+    bool? toggleFullScreen
   }) {
     return YoutubePlayerValue(
       isReady: isReady ?? this.isReady,
@@ -120,6 +124,7 @@ class YoutubePlayerValue {
       webViewController: webViewController ?? this.webViewController,
       isDragging: isDragging ?? this.isDragging,
       metaData: metaData ?? this.metaData,
+        toggleFullScreen:toggleFullScreen ?? this.toggleFullScreen
     );
   }
 
@@ -273,17 +278,19 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
   void setPlaybackRate(double rate) => _callMethod('setPlaybackRate($rate)');
 
   /// Toggles the player's full screen mode.
-  void toggleFullScreenMode() {
-    updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
-    if (value.isFullScreen) {
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.landscapeLeft,
-        DeviceOrientation.landscapeRight,
-      ]);
-    } else {
-      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    }
-  }
+  void toggleFullScreenMode() =>
+        updateValue(value.copyWith(toggleFullScreen: true));
+  // void toggleFullScreenMode() {
+  //   updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
+  //   if (value.isFullScreen) {
+  //     SystemChrome.setPreferredOrientations([
+  //       DeviceOrientation.landscapeLeft,
+  //       DeviceOrientation.landscapeRight,
+  //     ]);
+  //   } else {
+  //     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  //   }
+  // }
 
   /// MetaData for the currently loaded or cued video.
   YoutubeMetaData get metadata => value.metaData;

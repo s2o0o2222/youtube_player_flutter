@@ -5,6 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../enums/thumbnail_quality.dart';
 import '../utils/errors.dart';
@@ -12,6 +14,7 @@ import '../utils/youtube_meta_data.dart';
 import '../utils/youtube_player_controller.dart';
 import '../utils/youtube_player_flags.dart';
 import '../widgets/widgets.dart';
+import 'fullscreen_youtube_player.dart';
 import 'raw_youtube_player.dart';
 
 /// A widget to play or stream YouTube videos using the official [YouTube IFrame Player API](https://developers.google.com/youtube/iframe_api_reference).
@@ -190,7 +193,7 @@ class YoutubePlayer extends StatefulWidget {
 
 class _YoutubePlayerState extends State<YoutubePlayer> {
   late YoutubePlayerController controller;
-
+  late InAppWebViewController? _cachedWebController;
   late double _aspectRatio;
   bool _initialLoad = true;
 
@@ -219,6 +222,59 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           controller.value.copyWith(isControlsVisible: true),
         );
       }
+
+    }
+
+    if (controller.value.toggleFullScreen) {
+      controller.updateValue(
+        controller.value.copyWith(
+          toggleFullScreen: false,
+          isControlsVisible: false
+        ),
+      );
+      if (controller.value.isFullScreen) {
+        SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+        ]);
+        Navigator.of(context, rootNavigator: true).pop();
+
+      }
+      else {
+        SystemChrome.setEnabledSystemUIOverlays([]);
+        controller.pause();
+        var _cachedPosition = controller.value.position;
+        var _videoId = controller.metadata.videoId;
+        _cachedWebController = controller.value.webViewController;
+        controller.reset();
+
+        await showFullScreenYoutubePlayer(
+          context: context,
+          controller: controller,
+          actionsPadding: widget.actionsPadding,
+          bottomActions: widget.bottomActions,
+          bufferIndicator: widget.bufferIndicator,
+          controlsTimeOut: widget.controlsTimeOut,
+          liveUIColor: widget.liveUIColor,
+          onReady: () {
+            controller.load(_videoId, startAt: _cachedPosition.inSeconds);
+            controller.play();
+          },
+          progressColors: widget.progressColors,
+          thumbnail: widget.thumbnail,
+          topActions: widget.topActions,
+
+        );
+
+        _cachedPosition = controller.value.position;
+        controller
+          ..updateValue(
+            controller.value.copyWith(webViewController: _cachedWebController),
+          )
+          ..seekTo(_cachedPosition);
+        // Future.delayed(const Duration(seconds: 2), () =>
+        //     controller.play());
+      }
     }
     if (mounted) setState(() {});
   }
@@ -231,56 +287,67 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 0,
-      color: Colors.black,
-      child: InheritedYoutubePlayer(
-        controller: controller,
-        child: Container(
-          color: Colors.black,
-          width: widget.width ?? MediaQuery.of(context).size.width,
-          child: _buildPlayer(
-            errorWidget: Container(
-              color: Colors.black87,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
+    return WillPopScope(
+      onWillPop: () async {
+        if (controller.value.isFullScreen) {
+          controller.toggleFullScreenMode();
+          return false;
+        }
+        return true;
+      },
+      child: Material(
+        elevation: 0,
+        color: Colors.black,
+        child: InheritedYoutubePlayer(
+          controller: controller,
+          child: Center(
+            child: Container(
+              color: Colors.black,
+              width: widget.width ?? MediaQuery.of(context).size.width,
+              child: _buildPlayer(
+                errorWidget: Container(
+                  color: Colors.black87,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.white,
-                      ),
-                      const SizedBox(width: 5.0),
-                      Expanded(
-                        child: Text(
-                          errorString(
-                            controller.value.errorCode,
-                            videoId: controller.metadata.videoId.isNotEmpty
-                                ? controller.metadata.videoId
-                                : controller.initialVideoId,
-                          ),
-                          style: const TextStyle(
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
                             color: Colors.white,
-                            fontWeight: FontWeight.w300,
-                            fontSize: 15.0,
                           ),
+                          const SizedBox(width: 5.0),
+                          Expanded(
+                            child: Text(
+                              errorString(
+                                controller.value.errorCode,
+                                videoId: controller.metadata.videoId.isNotEmpty
+                                    ? controller.metadata.videoId
+                                    : controller.initialVideoId,
+                              ),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w300,
+                                fontSize: 15.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16.0),
+                      Text(
+                        'Error Code: ${controller.value.errorCode}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w300,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    'Error Code: ${controller.value.errorCode}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -431,6 +498,18 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           loadingBuilder: (_, child, progress) =>
               progress == null ? child : Container(color: Colors.black),
           errorBuilder: (context, _, __) => Container(),
+          cacheWidth: 480,
+          cacheHeight:360
         ),
+      cacheWidth: 480,
+      cacheHeight:360
       );
+  
+  double _calculateAspectRatio(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
+    return width > height ? width / height : height / width;
+  }
 }

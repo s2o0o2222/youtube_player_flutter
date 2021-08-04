@@ -135,25 +135,29 @@ class YoutubePlayer extends StatefulWidget {
   /// {@endtemplate}
   final bool showVideoProgressIndicator;
 
+  /// isSinglePlayer: true if there is one player in screen. It will decide which method of fullscreen is used
+  final bool isSinglePlayer;
+
   /// Creates [YoutubePlayer] widget.
-  const YoutubePlayer({
-    this.key,
-    required this.controller,
-    this.width,
-    this.aspectRatio = 16 / 9,
-    this.controlsTimeOut = const Duration(seconds: 3),
-    this.bufferIndicator,
-    Color? progressIndicatorColor,
-    ProgressBarColors? progressColors,
-    this.onReady,
-    this.onEnded,
-    this.liveUIColor = Colors.red,
-    this.topActions,
-    this.bottomActions,
-    this.actionsPadding = const EdgeInsets.all(8.0),
-    this.thumbnail,
-    this.showVideoProgressIndicator = false,
-  })  : progressColors = progressColors ?? const ProgressBarColors(),
+  const YoutubePlayer(
+      {this.key,
+      required this.controller,
+      this.width,
+      this.aspectRatio = 16 / 9,
+      this.controlsTimeOut = const Duration(seconds: 3),
+      this.bufferIndicator,
+      Color? progressIndicatorColor,
+      ProgressBarColors? progressColors,
+      this.onReady,
+      this.onEnded,
+      this.liveUIColor = Colors.red,
+      this.topActions,
+      this.bottomActions,
+      this.actionsPadding = const EdgeInsets.all(8.0),
+      this.thumbnail,
+      this.showVideoProgressIndicator = false,
+      this.isSinglePlayer = true})
+      : progressColors = progressColors ?? const ProgressBarColors(),
         progressIndicatorColor = progressIndicatorColor ?? Colors.red;
 
   /// Converts fully qualified YouTube Url to video id.
@@ -222,58 +226,54 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           controller.value.copyWith(isControlsVisible: true),
         );
       }
-
     }
 
-    if (controller.value.toggleFullScreen) {
-      controller.updateValue(
-        controller.value.copyWith(
-          toggleFullScreen: false,
-          isControlsVisible: false
-        ),
-      );
-      if (controller.value.isFullScreen) {
-        SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-        SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-        ]);
-        Navigator.of(context, rootNavigator: true).pop();
-
-      }
-      else {
-        SystemChrome.setEnabledSystemUIOverlays([]);
-        controller.pause();
-        var _cachedPosition = controller.value.position;
-        var _videoId = controller.metadata.videoId;
-        _cachedWebController = controller.value.webViewController;
-        controller.reset();
-
-        await showFullScreenYoutubePlayer(
-          context: context,
-          controller: controller,
-          actionsPadding: widget.actionsPadding,
-          bottomActions: widget.bottomActions,
-          bufferIndicator: widget.bufferIndicator,
-          controlsTimeOut: widget.controlsTimeOut,
-          liveUIColor: widget.liveUIColor,
-          onReady: () {
-            controller.load(_videoId, startAt: _cachedPosition.inSeconds);
-            controller.play();
-          },
-          progressColors: widget.progressColors,
-          thumbnail: widget.thumbnail,
-          topActions: widget.topActions,
-
+    if (!widget.isSinglePlayer) {
+      if (controller.value.toggleFullScreen) {
+        controller.updateValue(
+          controller.value
+              .copyWith(toggleFullScreen: false, isControlsVisible: false),
         );
+        if (controller.value.isFullScreen) {
+          SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+          ]);
+          Navigator.of(context, rootNavigator: true).pop();
+        } else {
+          SystemChrome.setEnabledSystemUIOverlays([]);
+          controller.pause();
+          var _cachedPosition = controller.value.position;
+          var _videoId = controller.metadata.videoId;
+          _cachedWebController = controller.value.webViewController;
+          controller.reset();
 
-        _cachedPosition = controller.value.position;
-        controller
-          ..updateValue(
-            controller.value.copyWith(webViewController: _cachedWebController),
-          )
-          ..seekTo(_cachedPosition);
-        Future.delayed(const Duration(seconds: 2), () =>
-            controller.play());
+          await showFullScreenYoutubePlayer(
+            context: context,
+            controller: controller,
+            actionsPadding: widget.actionsPadding,
+            bottomActions: widget.bottomActions,
+            bufferIndicator: widget.bufferIndicator,
+            controlsTimeOut: widget.controlsTimeOut,
+            liveUIColor: widget.liveUIColor,
+            onReady: () {
+              controller.load(_videoId, startAt: _cachedPosition.inSeconds);
+              controller.play();
+            },
+            progressColors: widget.progressColors,
+            thumbnail: widget.thumbnail,
+            topActions: widget.topActions,
+          );
+
+          _cachedPosition = controller.value.position;
+          controller
+            ..updateValue(
+              controller.value
+                  .copyWith(webViewController: _cachedWebController),
+            )
+            ..seekTo(_cachedPosition);
+          Future.delayed(const Duration(seconds: 2), () => controller.play());
+        }
       }
     }
     if (mounted) setState(() {});
@@ -290,7 +290,7 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
     return WillPopScope(
       onWillPop: () async {
         if (controller.value.isFullScreen) {
-          controller.toggleFullScreenMode();
+          controller.toggleFullScreenMode(isSingleVideo: widget.isSinglePlayer);
           return false;
         }
         return true;
@@ -307,8 +307,8 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
               child: _buildPlayer(
                 errorWidget: Container(
                   color: Colors.black87,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 40.0, vertical: 20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -443,7 +443,7 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
                                 ),
                                 RemainingDuration(),
                                 const PlaybackSpeedButton(),
-                                FullScreenButton(),
+                                FullScreenButton(isSingleVideo: widget.isSinglePlayer,),
                               ],
                         ),
                       ),
@@ -479,15 +479,15 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
   }
 
   Widget get _thumbnail => Image.network(
-        YoutubePlayer.getThumbnail(
-          videoId: controller.metadata.videoId.isEmpty
-              ? controller.initialVideoId
-              : controller.metadata.videoId,
-        ),
-        fit: BoxFit.cover,
-        loadingBuilder: (_, child, progress) =>
-            progress == null ? child : Container(color: Colors.black),
-        errorBuilder: (context, _, __) => Image.network(
+      YoutubePlayer.getThumbnail(
+        videoId: controller.metadata.videoId.isEmpty
+            ? controller.initialVideoId
+            : controller.metadata.videoId,
+      ),
+      fit: BoxFit.cover,
+      loadingBuilder: (_, child, progress) =>
+          progress == null ? child : Container(color: Colors.black),
+      errorBuilder: (context, _, __) => Image.network(
           YoutubePlayer.getThumbnail(
             videoId: controller.metadata.videoId.isEmpty
                 ? controller.initialVideoId
@@ -499,12 +499,10 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
               progress == null ? child : Container(color: Colors.black),
           errorBuilder: (context, _, __) => Container(),
           cacheWidth: 480,
-          cacheHeight:360
-        ),
+          cacheHeight: 360),
       cacheWidth: 480,
-      cacheHeight:360
-      );
-  
+      cacheHeight: 360);
+
   double _calculateAspectRatio(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final width = size.width;

@@ -191,6 +191,12 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
   /// Pauses the video.
   void pause() => _callMethod('pause()');
 
+  void hideTopMenu() => _callMethod('hideTopMenu()');
+
+  void hideBottomMenu() => _callMethod('hideBottomMenu()');
+
+  void hidePauseOverlay() => _callMethod('hidePauseOverlay()');
+
   /// Loads the video as per the [videoId] provided.
   void load(String videoId, {int startAt = 0, int? endAt}) {
     var loadParams = 'videoId:"$videoId",startSeconds:$startAt';
@@ -278,8 +284,22 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
   void setPlaybackRate(double rate) => _callMethod('setPlaybackRate($rate)');
 
   /// Toggles the player's full screen mode.
-  void toggleFullScreenMode() =>
-        updateValue(value.copyWith(toggleFullScreen: true));
+  void toggleFullScreenMode({bool isSingleVideo = true}) {
+    if (isSingleVideo) {
+      updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
+        if (value.isFullScreen) {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        } else {
+          SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+        }
+    } else {
+      updateValue(value.copyWith(toggleFullScreen: true));
+    }
+  }
+
   // void toggleFullScreenMode() {
   //   updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
   //   if (value.isFullScreen) {

@@ -47,8 +47,9 @@ class _VideoListState extends State<VideoList> {
               ProgressBar(isExpanded: true),
               const SizedBox(width: 10.0),
               RemainingDuration(),
-              FullScreenButton(),
+              FullScreenButton(isSingleVideo: false),
             ],
+            isSinglePlayer: false,
           );
         },
         itemCount: _controllers.length,

@@ -10,6 +10,8 @@ import '../utils/youtube_player_controller.dart';
 class FullScreenButton extends StatefulWidget {
   /// Overrides the default [YoutubePlayerController].
   final YoutubePlayerController? controller;
+  // isSingleVideo:  Is display single video
+  final bool isSingleVideo;
 
   /// Defines color of the button.
   final Color color;
@@ -18,6 +20,7 @@ class FullScreenButton extends StatefulWidget {
   FullScreenButton({
     this.controller,
     this.color = Colors.white,
+    this.isSingleVideo = true
   });
 
   @override
@@ -64,7 +67,7 @@ class _FullScreenButtonState extends State<FullScreenButton> {
             : Icons.fullscreen,
         color: widget.color,
       ),
-      onPressed: () => _controller.toggleFullScreenMode(),
+      onPressed: () => _controller.toggleFullScreenMode(isSingleVideo: widget.isSingleVideo),
     );
   }
 }

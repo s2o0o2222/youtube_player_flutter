@@ -383,6 +383,21 @@ class _RawYoutubePlayerState extends State<RawYoutubePlayer>
                 document.getElementById("player").style.marginTop = margin;
                 return '';
             }
+            
+             function hideTopMenu() {
+                try { document.querySelector('#player').contentDocument.querySelector('.ytp-chrome-top, .ytp-title, .ytp-show-cards-title, .ytp-title-channel-logo, .ytp-pause-overlay, .ytp-title-channel, .ytp-hide-info-bar, .ytp-hide-info-bar, .ytp-chrome-top-buttons').style.display = 'none'; } catch(e) { }
+                return '';
+            }
+            
+            function hideBottomMenu() {
+                try { document.querySelector('#player').contentDocument.querySelector('.ytp-watermark').style.display = 'none'; } catch(e) { }
+                return '';
+            }
+            
+            function hidePauseOverlay() {
+                try { document.querySelector('#player').contentDocument.querySelector('.ytp-pause-overlay').style.display = 'none'; } catch(e) { }
+                return '';
+            }
         </script>
     </body>
     </html>

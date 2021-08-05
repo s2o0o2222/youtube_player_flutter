@@ -288,11 +288,13 @@ class YoutubePlayerController extends ValueNotifier<YoutubePlayerValue> {
     if (isSingleVideo) {
       updateValue(value.copyWith(isFullScreen: !value.isFullScreen));
         if (value.isFullScreen) {
+          SystemChrome.setEnabledSystemUIOverlays([]);
           SystemChrome.setPreferredOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
         } else {
+          SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
           SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
         }
     } else {

@@ -242,6 +242,10 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           Navigator.of(context, rootNavigator: true).pop();
         } else {
           SystemChrome.setEnabledSystemUIOverlays([]);
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
           controller.pause();
           var _cachedPosition = controller.value.position;
           var _videoId = controller.metadata.videoId;

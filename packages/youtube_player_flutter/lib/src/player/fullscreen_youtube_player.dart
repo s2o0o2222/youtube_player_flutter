@@ -42,7 +42,6 @@ Future<void> showFullScreenYoutubePlayer({
     progressColors: progressColors,
     thumbnail: thumbnail,
   );
-  SystemChrome.setEnabledSystemUIOverlays([]);
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
@@ -172,20 +171,29 @@ class _FullScreenYoutubePlayerState extends State<_FullScreenYoutubePlayer> {
   void initState() {
     super.initState();
     SchedulerBinding.instance!.addPostFrameCallback(
-      (_) => widget.controller.updateValue(
-        widget.controller.value.copyWith(isFullScreen: true),
-      ),
+      (_) {
+        widget.controller.updateValue(
+          widget.controller.value.copyWith(isFullScreen: true),
+        );
+        SystemChrome.setEnabledSystemUIOverlays([]);
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+      }
     );
 
   }
 
   @override
   void dispose() {
-
     SchedulerBinding.instance!.addPostFrameCallback(
-      (_) => widget.controller.updateValue(
+      (_) { widget.controller.updateValue(
         widget.controller.value.copyWith(isFullScreen: false),
-      ),
+      );
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+      }
     );
     super.dispose();
   }

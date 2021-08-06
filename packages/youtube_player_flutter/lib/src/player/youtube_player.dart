@@ -92,6 +92,12 @@ class YoutubePlayer extends StatefulWidget {
   /// {@endtemplate}
   final VoidCallback? onReady;
 
+  /// Callback to notify that the player has entered fullscreen.
+  final VoidCallback? onEnterFullScreen;
+
+  /// Callback to notify that the player has exited fullscreen.
+  final VoidCallback? onExitFullScreen;
+
   /// {@template youtube_player_flutter.onEnded}
   /// Called when player had ended playing a video.
   ///
@@ -150,6 +156,8 @@ class YoutubePlayer extends StatefulWidget {
       ProgressBarColors? progressColors,
       this.onReady,
       this.onEnded,
+        this.onExitFullScreen,
+        this.onEnterFullScreen,
       this.liveUIColor = Colors.red,
       this.topActions,
       this.bottomActions,
@@ -239,13 +247,16 @@ class _YoutubePlayerState extends State<YoutubePlayer> {
           SystemChrome.setPreferredOrientations([
             DeviceOrientation.portraitUp,
           ]);
-          Navigator.of(context, rootNavigator: true).pop();
+          // Navigator.of(context, rootNavigator: true).pop();
+          Navigator.of(context).pop();
+          widget.onExitFullScreen?.call();
         } else {
           SystemChrome.setEnabledSystemUIOverlays([]);
           SystemChrome.setPreferredOrientations([
             DeviceOrientation.landscapeLeft,
             DeviceOrientation.landscapeRight,
           ]);
+          widget.onEnterFullScreen?.call();
           controller.pause();
           var _cachedPosition = controller.value.position;
           var _videoId = controller.metadata.videoId;

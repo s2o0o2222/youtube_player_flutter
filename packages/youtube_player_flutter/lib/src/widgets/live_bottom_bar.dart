@@ -18,11 +18,13 @@ class LiveBottomBar extends StatefulWidget {
 
   /// Defines whether to show or hide the fullscreen button
   final bool showLiveFullscreenButton;
+  final bool showLive;
 
   /// Creates [LiveBottomBar] widget.
   LiveBottomBar({
     this.controller,
     required this.liveUIColor,
+    this.showLive = true,
     required this.showLiveFullscreenButton,
   });
 
@@ -102,16 +104,19 @@ class _LiveBottomBarState extends State<LiveBottomBar> {
               ),
             ),
           ),
-          InkWell(
-            onTap: () => _controller.seekTo(_controller.metadata.duration),
-            child: Material(
-              color: widget.liveUIColor,
-              child: const Text(
-                ' LIVE ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12.0,
-                  fontWeight: FontWeight.w300,
+          Visibility(
+            visible: widget.showLive,
+            child: InkWell(
+              onTap: () => _controller.seekTo(_controller.metadata.duration),
+              child: Material(
+                color: widget.liveUIColor,
+                child: const Text(
+                  ' LIVE ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.0,
+                    fontWeight: FontWeight.w300,
+                  ),
                 ),
               ),
             ),
